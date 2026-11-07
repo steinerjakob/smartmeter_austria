@@ -61,7 +61,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartMeterConfigEntry) -
     )
 
     # Create update coordinator
-    coordinator = SmartmeterDataCoordinator(hass, adapter)
+    coordinator = SmartmeterDataCoordinator(hass, adapter, entry)
     coordinator.update_interval = timedelta(seconds=data_interval)
     coordinator.logger = _LOGGER
 

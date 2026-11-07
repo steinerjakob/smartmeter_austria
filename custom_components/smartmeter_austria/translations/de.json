@@ -1,34 +1,38 @@
 {
     "config": {
         "abort": {
-            "already_configured": "Ger\u00e4t ist bereits konfiguriert",
-            "no_serial_ports": "Keine COM-Ports gefunden. Man ben\u00f6tigt einen g\u00fcltigen M-BUS zu USB-Adapter, um zu kommunizieren",
-            "cannot_connect": "Verbindung kann nicht hergestellt werden, bitte \u00fcberpr\u00fcfe den seriellen Anschluss und die elektrische Verbindung"
+            "already_configured": "Gerät ist bereits konfiguriert",
+            "no_serial_ports": "Keine COM-Ports gefunden. Man benötigt einen gültigen M-BUS zu USB-Adapter, um zu kommunizieren",
+            "cannot_connect": "Verbindung kann nicht hergestellt werden, bitte überprüfe den seriellen Anschluss und die elektrische Verbindung"
         },
         "error": {
-            "cannot_open_serial_port": "Serielle Schnittstelle kann nicht ge\u00f6ffnet werden, bitte pr\u00fcfen und erneut versuchen",
-            "invalid_serial_port": "Serielle Schnittstelle ist kein g\u00fcltiges Ger\u00e4t oder konnte nicht ge\u00f6ffnet werden"
+            "cannot_open_serial_port": "Serielle Schnittstelle kann nicht geöffnet werden, bitte prüfen und erneut versuchen",
+            "invalid_serial_port": "Serielle Schnittstelle ist kein gültiges Gerät oder konnte nicht geöffnet werden"
         },
         "step": {
             "user": {
                 "data": {
-                    "port": "USB Anschluss"
+                    "com_port": "USB Anschluss"
                 },
-                "description": "Das Smartmeter muss \u00fcber einen M-BUS zu USB Adapter angeschlossen werden, bitte w\u00e4hle die serielle Schnittstelle des USB Adapters aus."
+                "description": "Das Smartmeter muss über einen M-BUS zu USB Adapter angeschlossen werden. Bitte wähle die serielle Schnittstelle des USB Adapters aus. Einträge unter /dev/serial/by-id/ werden empfohlen, da sie ihren Namen nach einem Neustart oder beim Anstecken weiterer USB-Geräte behalten."
             }
         }
     },
     "options": {
         "error": {
             "data_interval_empty": "Bitte geben Sie eine Aktualisierungsrate zwischen 5 und 3600 Sekunden ein.",
-            "data_interval_wrong": "Aktualisierungsintervall muss zwischen 5 und 3600 Sekunden liegen."
+            "data_interval_wrong": "Aktualisierungsintervall muss zwischen 5 und 3600 Sekunden liegen.",
+            "cannot_connect": "Das Smartmeter kann an diesem Anschluss nicht gelesen werden, bitte überprüfe den seriellen Anschluss und die elektrische Verbindung",
+            "wrong_device": "An diesem Anschluss ist ein anderes Smartmeter angeschlossen"
         },
         "step": {
             "init": {
                 "data": {
-                    "smart_meter_data_interval": "Update Intervall [s]"
+                    "com_port": "USB Anschluss",
+                    "smartmeter_aut_data_interval": "Update Intervall [s]"
                 },
-                "title": "Aktualisierungsintervall in Sekunden"
+                "title": "Smartmeter Einstellungen",
+                "description": "USB Anschluss des M-BUS Adapters und Aktualisierungsintervall ändern. Einträge unter /dev/serial/by-id/ werden empfohlen."
             }
         }
     }

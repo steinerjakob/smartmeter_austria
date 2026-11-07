@@ -5,6 +5,7 @@ import asyncio
 from datetime import timedelta
 import logging
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from smartmeter_austria_energy.exceptions import (
@@ -23,7 +24,12 @@ _LOGGER = logging.getLogger(__name__)
 class SmartmeterDataCoordinator(DataUpdateCoordinator[ObisData]):
     """Fetches the data from the serial device."""
 
-    def __init__(self, hass: HomeAssistant, adapter: Smartmeter) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        adapter: Smartmeter,
+        config_entry: ConfigEntry | None = None,
+    ) -> None:
         """Initialize."""
         self.adapter: Smartmeter = adapter
 
@@ -31,6 +37,7 @@ class SmartmeterDataCoordinator(DataUpdateCoordinator[ObisData]):
             # update_inverval is set in async_setup_entry()
             hass,
             _LOGGER,
+            config_entry=config_entry,
             name=DOMAIN,
             update_interval=timedelta(seconds=OPT_DATA_INTERVAL_VALUE),
         )
