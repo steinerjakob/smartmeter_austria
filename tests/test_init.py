@@ -1,6 +1,7 @@
 """Test the component setup."""
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.exceptions import ConfigEntryNotReady
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -8,7 +9,6 @@ from pytest_homeassistant_custom_component.common import (
     MockModule,
     mock_integration,
 )
-from serial.tools import list_ports_common
 from smartmeter_austria_energy.exceptions import SmartmeterSerialException
 from smartmeter_austria_energy.obisdata import ObisData, ObisValueBytes
 from smartmeter_austria_energy.supplier import SUPPLIER_EVN_NAME
@@ -58,6 +58,13 @@ async def test_async_setup_entry_config_not_ready(hass):
             await async_setup_entry(hass, config_entry)
 
 
+def _obis_data_mock(device_nr: str) -> MagicMock:
+    """Return a mocked ObisData object with the given device number."""
+    obis_data = MagicMock(spec=ObisData)
+    obis_data.DeviceNumber = ObisValueBytes(device_nr.encode())
+    return obis_data
+
+
 @pytest.mark.asyncio
 async def test_async_setup_entry_domain_not_loaded(hass):
     """Test the integration setup and install the domain."""
@@ -68,44 +75,29 @@ async def test_async_setup_entry_domain_not_loaded(hass):
         CONF_KEY_HEX: _HEX_KEY,
     }
 
-    device_nr = "test"
-
-    mock_integration(hass, MockModule(DOMAIN))
-
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="my_unique_test_id",
         data=_data,
     )
-
     config_entry.add_to_hass(hass)
 
-    with patch("serial.tools.list_ports.comports") as comports_mock:
-        com_port_info = list_ports_common.ListPortInfo(_COM_PORT, True)
-        comports_result: list[list_ports_common.ListPortInfo] = [com_port_info]
-        comports_mock.return_value = comports_result
-        with patch(
-            "custom_components.smartmeter_austria.config_flow.SmartmeterConfigFlow._async_current_entries"
-        ) as current_entries_mock:
-            current_entries_mock.return_value = {}
-            with patch(
-                "smartmeter_austria_energy.smartmeter.Smartmeter.read"
-            ) as smartmeter_read_mock, patch(
-                "smartmeter_austria_energy.obisdata.ObisData"
-            ) as obis_data_mock:
-                with patch.object(ObisData, "DeviceNumber") as device_number_mock:
-                    device_number_object = ObisValueBytes(device_nr)
-                    device_number_mock.return_value = device_number_object
+    with patch(
+        "smartmeter_austria_energy.smartmeter.Smartmeter.read",
+        return_value=_obis_data_mock("test"),
+    ):
+        result = await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
 
-                    smartmeter_read_mock.return_value = obis_data_mock
-                    result = await async_setup_entry(hass, config_entry)
-
-        assert result
+    assert result
+    assert config_entry.state is ConfigEntryState.LOADED
+    assert DOMAIN in hass.data
+    assert config_entry.runtime_data.coordinator.config_entry is config_entry
 
 
 @pytest.mark.asyncio
 async def test_async_setup_entry_domain_loaded(hass):
-    """Test the integration setup and install the domain."""
+    """Test the integration setup when the domain data already exists."""
 
     _data = {
         CONF_SUPPLIER_NAME: _SUPPLIER_NAME,
@@ -114,40 +106,23 @@ async def test_async_setup_entry_domain_loaded(hass):
     }
 
     hass.data.setdefault(DOMAIN, {})
-    mock_integration(hass, MockModule(DOMAIN))
 
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         unique_id="my_unique_test_id",
         data=_data,
     )
-
-    device_nr = "test"
-
     config_entry.add_to_hass(hass)
 
-    with patch("serial.tools.list_ports.comports") as comports_mock:
-        com_port_info = list_ports_common.ListPortInfo(_COM_PORT, True)
-        comports_result: list[list_ports_common.ListPortInfo] = [com_port_info]
-        comports_mock.return_value = comports_result
-        with patch(
-            "custom_components.smartmeter_austria.config_flow.SmartmeterConfigFlow._async_current_entries"
-        ) as current_entries_mock:
-            current_entries_mock.return_value = {}
+    with patch(
+        "smartmeter_austria_energy.smartmeter.Smartmeter.read",
+        return_value=_obis_data_mock("test"),
+    ):
+        result = await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
 
-            with patch(
-                "smartmeter_austria_energy.smartmeter.Smartmeter.read"
-            ) as smartmeter_read_mock, patch(
-                "smartmeter_austria_energy.obisdata.ObisData"
-            ) as obis_data_mock:
-                with patch.object(ObisData, "DeviceNumber") as device_number_mock:
-                    device_number_object = ObisValueBytes(device_nr)
-                    device_number_mock.return_value = device_number_object
-
-                    smartmeter_read_mock.return_value = obis_data_mock
-
-                    result = await async_setup_entry(hass, config_entry)
-        assert result
+    assert result
+    assert config_entry.state is ConfigEntryState.LOADED
 
 
 @pytest.mark.asyncio

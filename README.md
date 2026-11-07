@@ -41,8 +41,10 @@ Platform | Description
 
 ## Configuration is done in the UI
 
-1. Select the COM port of your M-BUS to USB converter: eg. /dev/ttyUSB0
-2. You can configure the default poll interval (30s) using the configuration link of the integration. It can be set between 10 and 3600 seconds.
+1. Select the serial port of your M-BUS to USB converter. Prefer the `/dev/serial/by-id/usb-...` entry (e.g. `/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A1B2C3-if00-port0`): unlike `/dev/ttyUSB0` it keeps its name after a reboot or when other USB devices are plugged in. The dropdown shows manufacturer and serial number of each adapter; you can also type a path.
+2. Using the configuration link of the integration (Settings -> Devices & services -> Smart Meter Austria -> Configure) you can
+   - change the serial port later on, e.g. to switch an existing installation from `/dev/ttyUSB0` to its `/dev/serial/by-id/...` path. A new port is checked by reading the meter, and it must belong to the same smart meter.
+   - change the default poll interval (30s). It can be set between 5 and 3600 seconds.
 
 ## Contributions are welcome!
 

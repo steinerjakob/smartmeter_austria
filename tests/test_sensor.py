@@ -14,7 +14,7 @@ from serial.tools import list_ports_common
 import serial.tools.list_ports
 from smartmeter_austria_energy.obisdata import ObisData, ObisValueBytes
 from smartmeter_austria_energy.smartmeter import Smartmeter
-from smartmeter_austria_energy.supplier import SUPPLIER_EVN_NAME
+from smartmeter_austria_energy.supplier import SUPPLIER_EVN_NAME, SUPPLIERS
 
 from custom_components.smartmeter_austria.config_flow import SmartmeterConfigFlow
 from custom_components.smartmeter_austria.const import (
@@ -40,7 +40,8 @@ _HEX_KEY = "my_hex_key"
 def async_add_entities(entities):
     """Add entities to a sensor as simuation for unit test. Helper method."""
     count = entities.__len__()
-    assert count == 13
+    # EVN meters supply 10 of the 13 possible sensor values.
+    assert count == 10
 
 
 @pytest.mark.asyncio
@@ -75,8 +76,11 @@ async def test_async_setup_entry(hass):
         ) as current_entries_mock:
             current_entries_mock.return_value = {}
             with patch.object(Smartmeter, "read") as smartmeter_mock:
+                adapter = Smartmeter(
+                    SUPPLIERS[_SUPPLIER_NAME], _COM_PORT, _HEX_KEY
+                )
                 coordinator = SmartmeterDataCoordinator(
-                    hass, adapter=smartmeter_mock)
+                    hass, adapter=adapter, config_entry=config_entry)
                 with patch.object(ObisData, "DeviceNumber") as device_number_mock:
                     device_number_object = ObisValueBytes(_SERIAL_NUMBER)
                     device_number_mock.return_value = device_number_object
