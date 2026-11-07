@@ -22,6 +22,16 @@ Integration of smart meter for electricity into Home Assistant.
 Component to integrate with a Austrian smart meter using its wired M-BUS interface.
 EVN, SALZBURGNETZ and TINETZ are supported.
 
+> **Fork of [NECH2004/smartmeter_austria][original]: a drop-in replacement for the original integration.**
+> It uses the same integration domain (`smartmeter_austria`), the same configuration data and the same sensor entities.
+> Existing installations keep their configuration, entities, statistics and history when switching. See [Switching from the original integration](#switching-from-the-original-integration).
+
+## What's new in this fork
+
+- **Stable USB device selection (by ID):** the port dropdown offers the `/dev/serial/by-id/usb-...` path of each adapter, labelled with manufacturer, description and serial number. Unlike `/dev/ttyUSB0`, this path doesn't change after a reboot or when other USB devices are plugged in. You can still type any path manually.
+- **Change the USB port after setup:** the port can be changed at any time under *Settings -> Devices & services -> Smart Meter Austria -> Configure*, without removing and re-adding the integration. The new port is checked by reading the meter, and it must belong to the same smart meter.
+- **Up to date with current Home Assistant:** tested with Home Assistant 2026.10 on Python 3.14, using `smartmeter_austria_energy` 1.5.0.
+
 **This component will set up the following platform.**
 
 Platform | Description
@@ -32,12 +42,33 @@ Platform | Description
 
 ## Installation
 
+### HACS (recommended)
+
+1. In HACS open the menu (three dots, top right) -> *Custom repositories*.
+2. Add `https://github.com/steinerjakob/smartmeter_austria` with category *Integration*.
+3. Search for "Smart Meter Austria", download it and restart Home Assistant.
+4. Go to *Settings -> Devices & services*, click *Add integration* and search for "Smart Meter Austria".
+
+### Manual
+
 1. If you do not have a `custom_components` directory (folder) there, you need to create it.
 2. In the `custom_components` directory (folder) create a new folder called `smartmeter_austria`.
 3. Download _all_ the files from the `custom_components/smartmeter_austria/` directory (folder) in this repository.
 4. Place the files you downloaded in the new directory (folder) you created.
 5. Restart Home Assistant
 6. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Smart Meter Austria"
+
+## Switching from the original integration
+
+This fork is a drop-in replacement for [NECH2004/smartmeter_austria][original]. **Don't** remove the integration entry from Home Assistant: just replace the code.
+
+1. If you installed the original through HACS, remove (uninstall) it in HACS. This only deletes the files in `custom_components/smartmeter_austria`; your configured integration entry stays in Home Assistant.
+   For a manual installation, delete the `custom_components/smartmeter_austria` folder instead.
+2. Install this fork as described in [Installation](#installation). Don't add the integration again, because it's already configured.
+3. Restart Home Assistant. The existing smart meter, its entities, statistics and history keep working unchanged.
+4. Optional: open *Settings -> Devices & services -> Smart Meter Austria -> Configure* and switch the port from `/dev/ttyUSB0` to the matching `/dev/serial/by-id/...` entry.
+
+To go back to the original, reverse the steps. The configuration stays compatible.
 
 ## Configuration is done in the UI
 
@@ -97,6 +128,8 @@ OBIS-Code | Attribute | German description | Unit
 The integration is done using the poll method. Perhaps it would be better to switch to push but I didn't want to float Home Assistant by its values (every 5 s).
 
 # Thanks
+This integration was created by Christian Neumeier (@NECH2004): [NECH2004/smartmeter_austria][original]. This fork builds on his work.
+
 Special thanks to Stefan (@tirolerstefan) who did an excellent work to read out the Kaifa MA300 smart meters used by TINETZ and EVN.
 I've used some parts of his code (mainly decrypt) as starting point here.
 [tirolerstefan/kaifa repository](https://github.com/tirolerstefan/kaifa)
@@ -104,23 +137,24 @@ I've used some parts of his code (mainly decrypt) as starting point here.
 ***
 
 <!-- HACS-Default-orange.svg?style=for-the-badge -->
-[releases-shield]: https://img.shields.io/github/v/release/NECH2004/smartmeter_austria?style=for-the-badge
-[releases]: https://github.com/NECH2004/smartmeter_austria/releases
+[releases-shield]: https://img.shields.io/github/v/release/steinerjakob/smartmeter_austria?style=for-the-badge
+[releases]: https://github.com/steinerjakob/smartmeter_austria/releases
 
-[commits-shield_y]: https://img.shields.io/github/commit-activity/y/NECH2004/smartmeter_austria?style=for-the-badge
-[commits-shield_m]: https://img.shields.io/github/commit-activity/m/NECH2004/smartmeter_austria?style=for-the-badge
-[commits-shield_w]: https://img.shields.io/github/commit-activity/w/NECH2004/smartmeter_austria?style=for-the-badge
-[commits]: https://github.com/NECH2004/smartmeter_austria/commits/dev
+[commits-shield_y]: https://img.shields.io/github/commit-activity/y/steinerjakob/smartmeter_austria?style=for-the-badge
+[commits-shield_m]: https://img.shields.io/github/commit-activity/m/steinerjakob/smartmeter_austria?style=for-the-badge
+[commits-shield_w]: https://img.shields.io/github/commit-activity/w/steinerjakob/smartmeter_austria?style=for-the-badge
+[commits]: https://github.com/steinerjakob/smartmeter_austria/commits/main
 
-[validate-shield]: https://github.com/NECH2004/smartmeter_austria/actions/workflows/hassfest.yaml/badge.svg?branch=dev
-[validation]: https://github.com/NECH2004/smartmeter_austria/actions/workflows/validate.yml
+[validate-shield]: https://github.com/steinerjakob/smartmeter_austria/actions/workflows/validate.yml/badge.svg?branch=main
+[validation]: https://github.com/steinerjakob/smartmeter_austria/actions/workflows/validate.yml
 
 [hacs]: https://github.com/custom-components/hacs
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[license-shield]:https://img.shields.io/github/license/NECH2004/smartmeter_austria?style=for-the-badge
+[license-shield]:https://img.shields.io/github/license/steinerjakob/smartmeter_austria?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Christian%20Neumeier%20%40NECH2004?style=for-the-badge
 
-[smartmeter_austria]: https://github.com/NECH2004/smartmeter_austria
+[smartmeter_austria]: https://github.com/steinerjakob/smartmeter_austria
+[original]: https://github.com/NECH2004/smartmeter_austria
 [exampleimg]: example.png
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/
