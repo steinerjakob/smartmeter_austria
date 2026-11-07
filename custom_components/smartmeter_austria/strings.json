@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Smartmeter",
-        "description": "The smart meter must be connected via a M-BUS to USB converter, please select serial port of your USB device.",
+        "description": "The smart meter must be connected via a M-BUS to USB converter. Please select the serial port of your USB device. Entries under /dev/serial/by-id/ are recommended, because they keep their name after a restart or when other USB devices are plugged in.",
         "data": {
           "supplier": "Supplier",
           "com_port": "USB port",
@@ -24,15 +24,19 @@
   "options": {
     "step": {
       "init": {
-        "title": "Set update rate in seconds",
+        "title": "Smart meter settings",
         "data": {
-          "smart_meter_data_interval": "Update interval [s]"
-        }
+          "com_port": "USB port",
+          "smartmeter_aut_data_interval": "Update interval [s]"
+        },
+        "description": "Change the USB port of the M-BUS adapter and the update interval. Entries under /dev/serial/by-id/ are recommended."
       }
     },
     "error": {
       "data_interval_empty": "Please enter an update rate between 5 and 3600 seconds.",
-      "data_interval_wrong": "Update rate must be between 5 and 3600 seconds."
+      "data_interval_wrong": "Update rate must be between 5 and 3600 seconds.",
+      "cannot_connect": "Unable to read the smart meter on this port, please check the serial port and electrical connection",
+      "wrong_device": "A different smart meter is connected to this port"
     }
   }
 }
