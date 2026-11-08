@@ -2,13 +2,13 @@
   "domain": "smartmeter_austria",
   "name": "Smart Meter Austria",
   "codeowners": [
-    "@NECH2004"
+    "@steinerjakob"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/NECH2004/smartmeter_austria",
+  "documentation": "https://github.com/steinerjakob/smartmeter_austria",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/NECH2004/smartmeter_austria/issues",
+  "issue_tracker": "https://github.com/steinerjakob/smartmeter_austria/issues",
   "loggers": [
     "smartmeter_austria"
   ],
