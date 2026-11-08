@@ -2,12 +2,13 @@
     "config": {
         "abort": {
             "already_configured": "Device is already configured",
-            "no_serial_ports": "No com ports found. Need a valid M-BUS to USB device to communicate",
-            "cannot_connect": "Unable to connect, please check serial port and electrical connection"
+            "no_serial_ports": "No com ports found. Need a valid M-BUS to USB device to communicate"
         },
         "error": {
-            "cannot_open_serial_port": "Cannot open serial port, please check and try again",
-            "invalid_serial_port": "Serial port is not a valid device or could not be opened"
+            "cannot_open_serial_port": "Cannot open the serial port. Check that the device exists and is not used by another integration or add-on (e.g. ZHA, Zigbee2MQTT, another smart meter integration).",
+            "no_data": "No smart meter data was received on this port. Check that this is the M-BUS adapter of the meter, the wiring, and that the selected supplier is correct.",
+            "cannot_decode": "Data was received from the meter but could not be decrypted. Check the key and the supplier.",
+            "invalid_key": "The key must consist of 32 hexadecimal characters (0-9, A-F)."
         },
         "step": {
             "user": {
@@ -34,8 +35,10 @@
         "error": {
             "data_interval_empty": "Please enter an update rate between 5 and 3600 seconds.",
             "data_interval_wrong": "Update rate must be between 5 and 3600 seconds.",
-            "cannot_connect": "Unable to read the smart meter on this port, please check the serial port and electrical connection",
-            "wrong_device": "A different smart meter is connected to this port"
+            "wrong_device": "A different smart meter is connected to this port",
+            "cannot_open_serial_port": "Cannot open the serial port. Check that the device exists and is not used by another integration or add-on (e.g. ZHA, Zigbee2MQTT, another smart meter integration).",
+            "no_data": "No smart meter data was received on this port. Check that this is the M-BUS adapter of the meter, the wiring, and that the selected supplier is correct.",
+            "cannot_decode": "Data was received from the meter but could not be decrypted. Check the key and the supplier."
         }
     }
 }

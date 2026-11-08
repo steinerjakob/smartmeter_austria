@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 import logging
 import os
+import re
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
@@ -17,7 +18,11 @@ from homeassistant.helpers.selector import (
 )
 import serial.tools.list_ports
 from serial.tools.list_ports_common import ListPortInfo
-from smartmeter_austria_energy.exceptions import SmartmeterException
+from smartmeter_austria_energy.exceptions import (
+    SmartmeterException,
+    SmartmeterSerialException,
+    SmartmeterTimeoutException,
+)
 from smartmeter_austria_energy.smartmeter import Smartmeter
 from smartmeter_austria_energy.supplier import SUPPLIERS
 import voluptuous as vol
@@ -35,6 +40,38 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 SERIAL_BY_ID_DIR = "/dev/serial/by-id"
+
+# The meters use AES-128, so the key has 16 bytes = 32 hex characters.
+_KEY_HEX_PATTERN = re.compile(r"^[0-9a-fA-F]{32}$")
+
+
+def normalize_key(key_hex: str) -> str:
+    """Remove spaces and separators users often copy along with the key."""
+    return re.sub(r"[\s:\-]", "", key_hex or "")
+
+
+def is_valid_key(key_hex: str) -> bool:
+    """Return True if the key consists of exactly 32 hex characters."""
+    return bool(_KEY_HEX_PATTERN.match(key_hex))
+
+
+def connection_error(err: BaseException) -> str:
+    """Map an exception from reading the meter to a config flow error key.
+
+    The library wraps every error of read() in a SmartmeterException, so the
+    chain of causes is inspected to tell apart the possible problems.
+    """
+    cause: BaseException | None = err
+    while cause is not None:
+        if isinstance(cause, SmartmeterSerialException):
+            # Port missing, in use by another integration/add-on, or no access.
+            return "cannot_open_serial_port"
+        if isinstance(cause, SmartmeterTimeoutException):
+            # Port opened but no complete telegram of the selected supplier.
+            return "no_data"
+        cause = cause.__cause__ or cause.__context__
+    # Telegrams were received but could not be decrypted/parsed.
+    return "cannot_decode"
 
 
 def validate_and_connect(data: Mapping[str, Any]) -> dict[str, str]:
@@ -55,8 +92,14 @@ def validate_and_connect(data: Mapping[str, Any]) -> dict[str, str]:
         ret["device_number"] = device_number
         _LOGGER.debug("Returning device info=%s", ret)
     except SmartmeterException as err:
-        _LOGGER.warning("Could not connect to device=%s", com_port)
-        raise err
+        _LOGGER.warning(
+            "Could not read smart meter on %s (supplier %s): %s",
+            com_port,
+            supplier_name,
+            connection_error(err),
+            exc_info=True,
+        )
+        raise
 
     # Return info we want to store in the config entry.
     return ret
@@ -153,33 +196,45 @@ class SmartmeterConfigFlow(ConfigFlow, domain=DOMAIN):
 
         # Handle the initial step.
         if user_input is not None:
-            try:
-                info = await self.hass.async_add_executor_job(
-                    validate_and_connect, user_input
-                )
-
-            except SmartmeterException:
-                return self.async_abort(reason="cannot_connect")
+            user_input = {
+                **user_input,
+                CONF_KEY_HEX: normalize_key(user_input[CONF_KEY_HEX]),
+            }
+            if not is_valid_key(user_input[CONF_KEY_HEX]):
+                errors["base"] = "invalid_key"
             else:
-                info.update(user_input)
+                try:
+                    info = await self.hass.async_add_executor_job(
+                        validate_and_connect, user_input
+                    )
+                except Exception as err:  # noqa: BLE001
+                    errors["base"] = connection_error(err)
 
-                device_unique_id = info["device_number"]
-                await self.async_set_unique_id(device_unique_id)
-                self._abort_if_unique_id_configured()
+        if user_input is not None and not errors:
+            device_unique_id = info["device_number"]
+            await self.async_set_unique_id(device_unique_id)
+            self._abort_if_unique_id_configured()
 
-                return self.async_create_entry(
-                    title=info["title"],
-                    data={
-                        CONF_SUPPLIER_NAME: user_input[CONF_SUPPLIER_NAME],
-                        CONF_COM_PORT: user_input[CONF_COM_PORT],
-                        CONF_KEY_HEX: user_input[CONF_KEY_HEX],
-                        CONF_SERIAL_NO: device_unique_id,
-                    },
-                )
+            return self.async_create_entry(
+                title=info["title"],
+                data={
+                    CONF_SUPPLIER_NAME: user_input[CONF_SUPPLIER_NAME],
+                    CONF_COM_PORT: user_input[CONF_COM_PORT],
+                    CONF_KEY_HEX: user_input[CONF_KEY_HEX],
+                    CONF_SERIAL_NO: device_unique_id,
+                },
+            )
 
-        # If no user input, must be first pass through the config.  Show  initial form.
+        # First pass, or the input had an error: show the form.
         suppliers = list(SUPPLIERS.keys())
         default_supplier = suppliers[0]
+
+        if user_input is not None:
+            # Keep what the user entered when showing the form again with an error.
+            default_supplier = user_input.get(CONF_SUPPLIER_NAME, default_supplier)
+            self._default_com_port = user_input.get(
+                CONF_COM_PORT, self._default_com_port
+            )
 
         config_options = {
             vol.Required(CONF_SUPPLIER_NAME, default=default_supplier): SelectSelector(
@@ -190,7 +245,10 @@ class SmartmeterConfigFlow(ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_COM_PORT, default=self._default_com_port
             ): _com_port_selector(self._com_ports_list),
-            vol.Required(CONF_KEY_HEX): str,
+            vol.Required(
+                CONF_KEY_HEX,
+                default=(user_input or {}).get(CONF_KEY_HEX, vol.UNDEFINED),
+            ): str,
         }
         schema = vol.Schema(config_options)
 
@@ -291,9 +349,8 @@ class SmartMeterOptionsFlowHandler(OptionsFlow):
                 validate_and_connect,
                 {**self.config_entry.data, CONF_COM_PORT: new_port},
             )
-        except Exception:  # noqa: BLE001
-            _LOGGER.warning("Could not read smart meter on port %s", new_port)
-            return {"base": "cannot_connect"}
+        except Exception as err:  # noqa: BLE001
+            return {"base": connection_error(err)}
 
         expected = self.config_entry.data.get(CONF_SERIAL_NO)
         if expected and info.get("device_number") != expected:

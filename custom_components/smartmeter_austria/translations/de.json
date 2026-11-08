@@ -2,12 +2,13 @@
     "config": {
         "abort": {
             "already_configured": "Gerät ist bereits konfiguriert",
-            "no_serial_ports": "Keine COM-Ports gefunden. Man benötigt einen gültigen M-BUS zu USB-Adapter, um zu kommunizieren",
-            "cannot_connect": "Verbindung kann nicht hergestellt werden, bitte überprüfe den seriellen Anschluss und die elektrische Verbindung"
+            "no_serial_ports": "Keine COM-Ports gefunden. Man benötigt einen gültigen M-BUS zu USB-Adapter, um zu kommunizieren"
         },
         "error": {
-            "cannot_open_serial_port": "Serielle Schnittstelle kann nicht geöffnet werden, bitte prüfen und erneut versuchen",
-            "invalid_serial_port": "Serielle Schnittstelle ist kein gültiges Gerät oder konnte nicht geöffnet werden"
+            "cannot_open_serial_port": "Die serielle Schnittstelle kann nicht geöffnet werden. Prüfe, ob das Gerät existiert und nicht von einer anderen Integration oder einem Add-on verwendet wird (z.B. ZHA, Zigbee2MQTT, eine andere Smartmeter-Integration).",
+            "no_data": "An diesem Anschluss wurden keine Smartmeter-Daten empfangen. Prüfe, ob das der M-BUS Adapter des Zählers ist, die Verkabelung und ob der richtige Netzbetreiber ausgewählt ist.",
+            "cannot_decode": "Vom Zähler wurden Daten empfangen, die aber nicht entschlüsselt werden konnten. Prüfe den Schlüssel und den Netzbetreiber.",
+            "invalid_key": "Der Schlüssel muss aus 32 hexadezimalen Zeichen (0-9, A-F) bestehen."
         },
         "step": {
             "user": {
@@ -22,8 +23,10 @@
         "error": {
             "data_interval_empty": "Bitte geben Sie eine Aktualisierungsrate zwischen 5 und 3600 Sekunden ein.",
             "data_interval_wrong": "Aktualisierungsintervall muss zwischen 5 und 3600 Sekunden liegen.",
-            "cannot_connect": "Das Smartmeter kann an diesem Anschluss nicht gelesen werden, bitte überprüfe den seriellen Anschluss und die elektrische Verbindung",
-            "wrong_device": "An diesem Anschluss ist ein anderes Smartmeter angeschlossen"
+            "wrong_device": "An diesem Anschluss ist ein anderes Smartmeter angeschlossen",
+            "cannot_open_serial_port": "Die serielle Schnittstelle kann nicht geöffnet werden. Prüfe, ob das Gerät existiert und nicht von einer anderen Integration oder einem Add-on verwendet wird (z.B. ZHA, Zigbee2MQTT, eine andere Smartmeter-Integration).",
+            "no_data": "An diesem Anschluss wurden keine Smartmeter-Daten empfangen. Prüfe, ob das der M-BUS Adapter des Zählers ist, die Verkabelung und ob der richtige Netzbetreiber ausgewählt ist.",
+            "cannot_decode": "Vom Zähler wurden Daten empfangen, die aber nicht entschlüsselt werden konnten. Prüfe den Schlüssel und den Netzbetreiber."
         },
         "step": {
             "init": {
