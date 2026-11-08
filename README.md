@@ -30,7 +30,7 @@ EVN, SALZBURGNETZ and TINETZ are supported.
 
 - **Stable USB device selection (by ID):** the port dropdown offers the `/dev/serial/by-id/usb-...` path of each adapter, labelled with manufacturer, description and serial number. Unlike `/dev/ttyUSB0`, this path doesn't change after a reboot or when other USB devices are plugged in. You can still type any path manually.
 - **Change the USB port after setup:** the port can be changed at any time under *Settings -> Devices & services -> Smart Meter Austria -> Configure*, without removing and re-adding the integration. The new port is checked by reading the meter, and it must belong to the same smart meter.
-- **Up to date with current Home Assistant:** tested with Home Assistant 2026.10 on Python 3.14, using `smartmeter_austria_energy` 1.5.0.
+- **Up to date with current Home Assistant:** tested with Home Assistant 2026.10 on Python 3.14. The library stays on `smartmeter_austria_energy` 1.4.9, because 1.5.0 cannot read EVN meters.
 
 **This component will set up the following platform.**
 
