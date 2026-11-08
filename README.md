@@ -46,7 +46,7 @@ Platform | Description
 
 1. In HACS open the menu (three dots, top right) -> *Custom repositories*.
 2. Add `https://github.com/steinerjakob/smartmeter_austria` with category *Integration*.
-3. Search for "Smart Meter Austria (steinerjakob fork)" (not the original "Smartmeter Austria Energy"), click *Download* and restart Home Assistant.
+3. Search for "SmartMeter Austria MBus" (not the original "Smartmeter Austria Energy"), click *Download* and restart Home Assistant.
 4. Go to *Settings -> Devices & services*, click *Add integration* and search for "Smart Meter Austria".
 
 ### Manual
