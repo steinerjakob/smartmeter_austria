@@ -5,7 +5,7 @@ DOMAIN = "smartmeter_austria"
 
 # Base component constants
 NAME = "Smart Meter Austria Integration"
-ISSUE_URL = "https://github.com/NECH2004/smartmeter_austria/issues"
+ISSUE_URL = "https://github.com/steinerjakob/smartmeter_austria/issues"
 
 # Config entries
 CONF_SUPPLIER_NAME = "supplier"
