@@ -5,7 +5,11 @@ from homeassistant.config_entries import OptionsFlow
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from serial.tools import list_ports_common
-from smartmeter_austria_energy.exceptions import SmartmeterException
+from smartmeter_austria_energy.exceptions import (
+    SmartmeterException,
+    SmartmeterSerialException,
+    SmartmeterTimeoutException,
+)
 from smartmeter_austria_energy.obisdata import ObisData, ObisValueBytes
 from smartmeter_austria_energy.smartmeter import Smartmeter
 from smartmeter_austria_energy.supplier import SUPPLIER_EVN_NAME
@@ -13,7 +17,9 @@ from smartmeter_austria_energy.supplier import SUPPLIER_EVN_NAME
 from custom_components.smartmeter_austria.config_flow import (
     SmartmeterConfigFlow,
     SmartMeterOptionsFlowHandler,
+    connection_error,
     get_serial_by_id,
+    normalize_key,
     scan_comports,
 )
 from custom_components.smartmeter_austria.const import (
@@ -28,7 +34,7 @@ from custom_components.smartmeter_austria.const import (
 _COM_PORT = "/dev/ttyUSB1"
 _SERIAL_NUMBER = "DEVICE_NUMBER"
 _SUPPLIER_NAME = SUPPLIER_EVN_NAME
-_HEX_KEY = "my_hex_key"
+_HEX_KEY = "00112233445566778899AABBCCDDEEFF"
 
 
 def test_smartmeter_config_flow_constructor():
@@ -264,22 +270,22 @@ async def test_smart_meter_options_flow_handler_change_port_wrong_device(hass):
 
 
 @pytest.mark.asyncio
-async def test_smart_meter_options_flow_handler_change_port_cannot_connect(hass):
-    """Tests that a port where the meter cannot be read is rejected."""
+async def test_smart_meter_options_flow_handler_change_port_cannot_open(hass):
+    """Tests that a port which cannot be opened is rejected."""
     new_port = "/dev/ttyUSB7"
     config_entry = _add_entry(hass)
     flow = await _init_options_flow(hass, config_entry)
 
     with patch(
         "custom_components.smartmeter_austria.config_flow.validate_and_connect",
-        side_effect=SmartmeterException("boom"),
+        side_effect=_wrapped(SmartmeterSerialException("busy")),
     ):
         my_flow_result = await _configure_options_flow(
             hass, flow["flow_id"], {CONF_COM_PORT: new_port, OPT_DATA_INTERVAL: 30}
         )
 
     assert my_flow_result["type"] == "form"
-    assert my_flow_result["errors"] == {"base": "cannot_connect"}
+    assert my_flow_result["errors"] == {"base": "cannot_open_serial_port"}
     assert config_entry.data[CONF_COM_PORT] == _COM_PORT
 
 
@@ -355,3 +361,117 @@ def test_scan_comports_uses_by_id_path():
     assert "FTDI" in options[0]["label"]
     assert "A1B2C3" in options[0]["label"]
     assert "/dev/ttyUSB0" in options[0]["label"]
+
+
+def _wrapped(inner: Exception) -> SmartmeterException:
+    """Wrap an exception like Smartmeter.read() of the library does."""
+    try:
+        try:
+            raise inner
+        except Exception as exc:
+            raise SmartmeterException() from exc
+    except SmartmeterException as outer:
+        return outer
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (_wrapped(SmartmeterSerialException("busy")), "cannot_open_serial_port"),
+        (_wrapped(SmartmeterTimeoutException()), "no_data"),
+        (_wrapped(ValueError("bad frame")), "cannot_decode"),
+        (SmartmeterException("already running"), "cannot_decode"),
+    ],
+)
+def test_connection_error(error, expected):
+    """Tests the mapping of read errors to config flow errors."""
+    assert connection_error(error) == expected
+
+
+def test_normalize_key():
+    """Tests that separators are removed from the key."""
+    assert normalize_key(" 0011 2233:4455-6677 8899AABB CCDDEEFF ") == _HEX_KEY
+
+
+def _user_input(**overrides):
+    return {
+        CONF_SUPPLIER_NAME: _SUPPLIER_NAME,
+        CONF_COM_PORT: _COM_PORT,
+        CONF_KEY_HEX: _HEX_KEY,
+        **overrides,
+    }
+
+
+async def _start_user_flow(hass):
+    with patch("serial.tools.list_ports.comports", return_value=_comports(_COM_PORT)):
+        return await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+
+
+@pytest.mark.asyncio
+async def test_user_step_invalid_key_shows_form(hass):
+    """Tests that a malformed key is reported without reading the meter."""
+    flow = await _start_user_flow(hass)
+
+    with patch(
+        "custom_components.smartmeter_austria.config_flow.validate_and_connect"
+    ) as validate_mock:
+        result = await hass.config_entries.flow.async_configure(
+            flow["flow_id"], user_input=_user_input(**{CONF_KEY_HEX: "my_hex_key"})
+        )
+
+    validate_mock.assert_not_called()
+    assert result["type"] == "form"
+    assert result["errors"] == {"base": "invalid_key"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (_wrapped(SmartmeterSerialException("busy")), "cannot_open_serial_port"),
+        (_wrapped(SmartmeterTimeoutException()), "no_data"),
+        (_wrapped(ValueError("bad frame")), "cannot_decode"),
+    ],
+)
+async def test_user_step_read_error_shows_form(hass, error, expected):
+    """Tests that read errors keep the form open with a specific error."""
+    flow = await _start_user_flow(hass)
+
+    with patch(
+        "custom_components.smartmeter_austria.config_flow.validate_and_connect",
+        side_effect=error,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            flow["flow_id"], user_input=_user_input()
+        )
+
+    assert result["type"] == "form"
+    assert result["step_id"] == "user"
+    assert result["errors"] == {"base": expected}
+
+
+@pytest.mark.asyncio
+async def test_user_step_by_id_port_creates_entry(hass):
+    """Tests setup with a by-id port and a key containing spaces."""
+    by_id = "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller-if00-port0"
+    flow = await _start_user_flow(hass)
+
+    with patch(
+        "custom_components.smartmeter_austria.config_flow.validate_and_connect",
+        return_value={"title": "Smart Meter 'X'", "device_number": "X"},
+    ) as validate_mock, patch(
+        "custom_components.smartmeter_austria.async_setup_entry", return_value=True
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            flow["flow_id"],
+            user_input=_user_input(
+                **{CONF_COM_PORT: by_id, CONF_KEY_HEX: "0011 2233 4455 6677 8899 AABB CCDD EEFF"}
+            ),
+        )
+
+    assert validate_mock.call_args.args[0][CONF_COM_PORT] == by_id
+    assert result["type"] == "create_entry"
+    assert result["data"][CONF_COM_PORT] == by_id
+    assert result["data"][CONF_KEY_HEX] == _HEX_KEY
